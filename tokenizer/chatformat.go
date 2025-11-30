@@ -14,7 +14,7 @@ type ChatFormat struct {
 }
 
 func NewChatFormat(tokenizer Tokenizer) *ChatFormat {
-	specialTokens := *tokenizer.GetSpecialTokens()
+	specialTokens := tokenizer.GetSpecialTokens()
 
 	beginOfText := specialTokens["<|begin_of_text|>"]
 	endOfText := specialTokens["<|end_of_text|>"]
@@ -50,16 +50,16 @@ func (cf *ChatFormat) GetTokenizer() *Tokenizer {
 func (cf *ChatFormat) EncodeHeader(msg Message) []int {
 	tokens := []int{cf.startHeader}
 
-	tokens = append(tokens, *cf.tokenizer.EncodeAsList(msg.Role.Name)...)
+	tokens = append(tokens, cf.tokenizer.EncodeAsList(msg.Role.Name)...)
 	tokens = append(tokens, cf.endHeader)
 
-	tokens = append(tokens, *cf.tokenizer.EncodeAsList("\n")...)
+	tokens = append(tokens, cf.tokenizer.EncodeAsList("\n")...)
 	return tokens
 }
 
 func (cf *ChatFormat) EncodeMessage(msg Message) *[]int {
 	tokens := cf.EncodeHeader(msg)
-	tokens = append(tokens, *cf.tokenizer.EncodeAsList(strings.TrimSpace(msg.Content))...)
+	tokens = append(tokens, cf.tokenizer.EncodeAsList(strings.TrimSpace(msg.Content))...)
 	tokens = append(tokens, cf.endOfTurn)
 	return &tokens
 }

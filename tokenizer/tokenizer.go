@@ -31,18 +31,18 @@ func (t *Tokenizer) RegexPattern() *string {
 	return &patternString
 }
 
-func (t *Tokenizer) GetSpecialTokens() *map[string]int {
-	return &t.specialTokens
+func (t *Tokenizer) GetSpecialTokens() map[string]int {
+	return t.specialTokens
 }
 
-func (t *Tokenizer) isSpecialToke() bool {
+func (t *Tokenizer) isSpecialToken() bool {
 	return len(t.specialTokens) > 0
 }
 
-func (t *Tokenizer) EncodeAsList(name string) *[]int {
+func (t *Tokenizer) EncodeAsList(name string) []int {
 	panic("unimplemented")
 }
 
-func encodeImpl(name string) *[]int {
+func encodeImpl(name string) []int {
 	panic("unimplemented")
 }

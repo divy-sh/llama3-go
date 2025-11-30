@@ -12,26 +12,6 @@ import (
 	"time"
 )
 
-// Categorical sampler
-type CategoricalSampler struct {
-	rng *rand.Rand
-}
-
-func (c CategoricalSampler) SampleToken(logits []float32) int {
-	sum := float32(0)
-	for _, v := range logits {
-		sum += v
-	}
-	r := c.rng.Float32() * sum
-	for i, v := range logits {
-		r -= v
-		if r <= 0 {
-			return i
-		}
-	}
-	return len(logits) - 1
-}
-
 // Options struct
 type Options struct {
 	ModelPath    string
