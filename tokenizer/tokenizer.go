@@ -2,18 +2,18 @@ package tokenizer
 
 import (
 	"regexp"
-)
 
-type Pair [2]int
+	"github.com/divy-sh/llama3-go/utils"
+)
 
 type Tokenizer struct {
 	pattern       regexp.Regexp
 	vocab         Vocabulary
-	merges        map[Pair]int
+	merges        map[utils.Pair]int
 	specialTokens map[string]int
 }
 
-func NewTokenizer(vocab Vocabulary, merges map[Pair]int, specialTokens map[string]int, pattern string) *Tokenizer {
+func NewTokenizer(vocab Vocabulary, merges map[utils.Pair]int, specialTokens map[string]int, pattern string) *Tokenizer {
 	compiledPattern := regexp.MustCompile(pattern)
 	return &Tokenizer{
 		pattern:       *compiledPattern,

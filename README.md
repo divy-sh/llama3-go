@@ -18,7 +18,7 @@ A go package for running llama inference natively.
     - BF16FloatTensor
     - F16FloatTensor
 - ArrayFloatTensor
-- RoPE
+- RoPE ✅
 - Vocabulary ✅
 - Sampler
     - CategoricalSampler

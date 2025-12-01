@@ -7,6 +7,7 @@ import (
 )
 
 type CategoricalSampler struct {
+	rng *rand.Rand
 }
 
 func (s CategoricalSampler) Sample(logits floattensor.FloatTensor) int {
