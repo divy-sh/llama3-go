@@ -9,15 +9,15 @@ A go package for running llama inference natively.
 - Llama
 - Tokenizer
 - Parallel
-- Pair
-- GGMLTensorEntry
-- GGMLType
+- Pair ✅
+- GGMLTensorEntry ✅
+- GGMLType ✅
 - FloatTensor
     - Q4_0FloatTensor
     - Q8_0FloatTensor
     - BF16FloatTensor
     - F16FloatTensor
-- ArrayFloatTensor
+    - ArrayFloatTensor
 - RoPE ✅
 - Vocabulary ✅
 - Sampler

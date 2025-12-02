@@ -2,15 +2,9 @@ package infer
 
 import (
 	"math/rand"
-
-	"github.com/divy-sh/llama3-go/tensor/floattensor"
 )
 
-type CategoricalSampler struct {
-	rng *rand.Rand
-}
-
-func (s CategoricalSampler) Sample(logits floattensor.FloatTensor) int {
+func Sample(logits floattensor.FloatTensor) int {
 	r := rand.Float32() // random float in [0.0,1.0)
 	cdf := float32(0.0)
 
@@ -21,8 +15,4 @@ func (s CategoricalSampler) Sample(logits floattensor.FloatTensor) int {
 		}
 	}
 	return logits.Len() - 1 // fallback for rounding errors
-}
-
-func (s CategoricalSampler) Max(logits floattensor.FloatTensor) int {
-	return logits.ArgMax()
 }
