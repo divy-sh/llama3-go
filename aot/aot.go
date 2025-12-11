@@ -34,7 +34,7 @@ func preLoadGGUF(modelPath string) *PartialModel {
 		panic(fmt.Sprintf("Cannot pre-load model: file not found at %s", path))
 	}
 
-	gguf, err := llama.LoadModel(path)
+	gguf, err := gguf.LoadModel(path)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load GGUF metadata from %s: %v", path, err))
 	}
@@ -47,9 +47,7 @@ func preLoadGGUF(modelPath string) *PartialModel {
 
 	const defaultMaxTokens = 8192
 
-	ml := &ModelLoader{}
-
-	baseModel, err := ml.LoadModel(file, gguf, defaultMaxTokens, false)
+	baseModel, err := llama.LoadModelGguf(file, gguf, defaultMaxTokens, false)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load base model structure from %s: %v", path, err))
 	}
@@ -77,33 +75,26 @@ func TryUsePreLoaded(modelPath string, contextLength int) (*llama.Llama, error) 
 
 	baseModel := preLoaded.Model
 
-	// timer := Log("Load tensors from pre-loaded model")
+	// timer := util.Log("Load tensors from pre-loaded model")
 	// defer timer.Close()
 
-	file, err := os.Open(modelPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open model file for tensor loading: %w", err)
-	}
-	defer file.Close()
-
-	tensorEntries, err := LoadTensors(file, preLoaded.TensorDataOffset, preLoaded.TensorInfos)
+	tensorEntries, err := gguf.LoadTensors(modelPath, preLoaded.TensorDataOffset, preLoaded.TensorInfos)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load tensors from preloaded model file: %w", err)
 	}
 
 	// Load weights using the tensor entries
-	ml := &ModelLoader{}
-	weights, err := ml.LoadWeights(tensorEntries, baseModel.Configuration())
+	weights, err := llama.LoadWeights(tensorEntries, baseModel.Configuration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load weights from tensor entries: %w", err)
 	}
 
 	// Create a new Llama model instance with the specified context length.
-	newConfig := baseModel.Configuration().WithContextLength(contextLength)
+	newConfig := baseModel.Configuration.WithContextLength(contextLength)
 
-	return &Llama{
-		Config:    newConfig,
-		Tokenizer: baseModel.GetTokenizer(),
-		Weights:   weights,
+	return &llama.Llama{
+		Configuration: newConfig,
+		Tokenizer:     baseModel.Tokenizer,
+		Weights:       weights,
 	}, nil
 }

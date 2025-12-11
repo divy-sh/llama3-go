@@ -2,19 +2,16 @@ package model
 
 import (
 	"math"
+
+	"github.com/divy-sh/llama3-go/util"
 )
 
 type RoPE struct{}
 
-type Pair struct {
-	Cr []float32 // Cosine components
-	Ci []float32 // Sine components
-}
-
 // PrecomputeFreqsCis computes the RoPE frequency tables (cos/sin components) for a given context length.
 // It includes the Llama 3.1 scaling logic.
 func (r *RoPE) PrecomputeFreqsCis(contextLength, headSize int, theta float64,
-	ropeScaling bool, scaleFactor, loFreqFactor, hiFreqFactor, oldContextLength float32) Pair {
+	ropeScaling bool, scaleFactor, loFreqFactor, hiFreqFactor, oldContextLength float32) util.Pair[[]float32, []float32] {
 
 	if headSize%2 != 0 {
 		panic("headSize must be even")
@@ -55,5 +52,5 @@ func (r *RoPE) PrecomputeFreqsCis(contextLength, headSize int, theta float64,
 	if contextLength*halfHeadSize != n {
 		panic("RoPE array size mismatch")
 	}
-	return Pair{Cr: cr, Ci: ci}
+	return util.Pair[[]float32, []float32]{First: cr, Second: ci}
 }

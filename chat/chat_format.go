@@ -29,12 +29,12 @@ type Message struct {
 // ChatFormat encapsulates the logic for encoding dialogs based on special tokens.
 type ChatFormat struct {
 	Tokenizer    *tokenizer.Tokenizer
-	beginOfText  int
-	endHeader    int
-	startHeader  int
-	endOfTurn    int
-	endOfText    int
-	endOfMessage int // Only in 3.1
+	BeginOfTest  int
+	EndHeader    int
+	StartHeader  int
+	EndOfTurn    int
+	EndOfText    int
+	EndOfMessage int // Only in 3.1
 	StopTokens   map[int]struct{}
 }
 
@@ -47,20 +47,20 @@ func NewChatFormat(t *tokenizer.Tokenizer) *ChatFormat {
 		StopTokens: make(map[int]struct{}),
 	}
 
-	cf.beginOfText = specialTokens["<|begin_of_text|>"]
-	cf.startHeader = specialTokens["<|start_header_id|>"]
-	cf.endHeader = specialTokens["<|end_header_id|>"]
-	cf.endOfTurn = specialTokens["<|eot_id|>"]
-	cf.endOfText = specialTokens["<|end_of_text|>"]
+	cf.BeginOfTest = specialTokens["<|begin_of_text|>"]
+	cf.StartHeader = specialTokens["<|start_header_id|>"]
+	cf.EndHeader = specialTokens["<|end_header_id|>"]
+	cf.EndOfTurn = specialTokens["<|eot_id|>"]
+	cf.EndOfText = specialTokens["<|end_of_text|>"]
 
 	if val, ok := specialTokens["<|eom_id|>"]; ok {
-		cf.endOfMessage = val
+		cf.EndOfMessage = val
 	} else {
-		cf.endOfMessage = -1
+		cf.EndOfMessage = -1
 	}
 
-	cf.StopTokens[cf.endOfText] = struct{}{}
-	cf.StopTokens[cf.endOfTurn] = struct{}{}
+	cf.StopTokens[cf.EndOfText] = struct{}{}
+	cf.StopTokens[cf.EndOfTurn] = struct{}{}
 
 	return cf
 }
@@ -77,9 +77,9 @@ func (cf *ChatFormat) GetStopTokens() map[int]struct{} {
 
 // EncodeHeader encodes the role header, e.g., <|start_header_id|>user<|end_header_id|>\n
 func (cf *ChatFormat) EncodeHeader(message Message) []int {
-	tokens := []int{cf.startHeader}
+	tokens := []int{cf.StartHeader}
 	tokens = append(tokens, cf.Tokenizer.EncodeAsList(message.Role.Name)...)
-	tokens = append(tokens, cf.endHeader)
+	tokens = append(tokens, cf.EndHeader)
 	tokens = append(tokens, cf.Tokenizer.EncodeAsList("\n")...)
 	return tokens
 }
@@ -88,13 +88,13 @@ func (cf *ChatFormat) EncodeHeader(message Message) []int {
 func (cf *ChatFormat) EncodeMessage(message Message) []int {
 	tokens := cf.EncodeHeader(message)
 	tokens = append(tokens, cf.Tokenizer.EncodeAsList(strings.TrimSpace(message.Content))...)
-	tokens = append(tokens, cf.endOfTurn)
+	tokens = append(tokens, cf.EndOfTurn)
 	return tokens
 }
 
 // EncodeDialogPrompt encodes a full dialog into the model's required prompt format.
 func (cf *ChatFormat) EncodeDialogPrompt(appendAssistantTurn bool, dialog []Message) []int {
-	tokens := []int{cf.beginOfText}
+	tokens := []int{cf.BeginOfTest}
 	for _, message := range dialog {
 		tokens = append(tokens, cf.EncodeMessage(message)...)
 	}

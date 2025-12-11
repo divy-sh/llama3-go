@@ -6,28 +6,25 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-)
 
-type Pair[First, Second any] struct {
-	First  First
-	Second Second
-}
+	"github.com/divy-sh/llama3-go/util"
+)
 
 // Tokenizer implements the Byte Pair Encoding algorithm.
 type Tokenizer struct {
 	compiledPattern *regexp.Regexp
-	vocabulary      *Vocabulary            // Vocabulary holds the mapping from token ID to string
-	merges          map[Pair[int, int]]int // BPE merges: (tokenA, tokenB) -> mergedTokenID
-	specialTokens   map[string]int         // Map of special token string to token ID
+	vocabulary      *Vocabulary                 // Vocabulary holds the mapping from token ID to string
+	merges          map[util.Pair[int, int]]int // BPE merges: (tokenA, tokenB) -> mergedTokenID
+	specialTokens   map[string]int              // Map of special token string to token ID
 }
 
 // NewTokenizer creates a new BPE Tokenizer.
 // The BPE merges are pre-processed to map (token1_id, token2_id) -> merged_token_id.
-func NewTokenizer(vocabulary *Vocabulary, merges []Pair[int, int], regexPattern string, specialTokens map[string]int) *Tokenizer {
+func NewTokenizer(vocabulary *Vocabulary, merges []util.Pair[int, int], regexPattern string, specialTokens map[string]int) *Tokenizer {
 	t := &Tokenizer{
 		vocabulary:    vocabulary,
 		specialTokens: make(map[string]int, len(specialTokens)),
-		merges:        make(map[Pair[int, int]]int),
+		merges:        make(map[util.Pair[int, int]]int),
 	}
 
 	for k, v := range specialTokens {
@@ -118,7 +115,7 @@ func (t *Tokenizer) encodeChunk(chunk string) []int {
 		// Find the best pair to merge (the one with the lowest merged token ID)
 		stats := t.getStats(ids)
 
-		bestPair := Pair[int, int]{}
+		bestPair := util.Pair[int, int]{}
 		minMergeID := math.MaxInt
 		foundMerge := false
 
@@ -144,17 +141,17 @@ func (t *Tokenizer) encodeChunk(chunk string) []int {
 }
 
 // getStats counts the frequency of adjacent token pairs in the IDs list.
-func (t *Tokenizer) getStats(ids []int) map[Pair[int, int]]int {
-	stats := make(map[Pair[int, int]]int)
+func (t *Tokenizer) getStats(ids []int) map[util.Pair[int, int]]int {
+	stats := make(map[util.Pair[int, int]]int)
 	for i := 0; i+1 < len(ids); i++ {
-		pair := Pair[int, int]{First: ids[i], Second: ids[i+1]}
+		pair := util.Pair[int, int]{First: ids[i], Second: ids[i+1]}
 		stats[pair]++
 	}
 	return stats
 }
 
 // merge applies a single BPE merge operation to the list of IDs.
-func (t *Tokenizer) merge(ids []int, pair Pair[int, int], idx int) []int {
+func (t *Tokenizer) merge(ids []int, pair util.Pair[int, int], idx int) []int {
 	newIDs := make([]int, 0, len(ids))
 	i := 0
 	for i < len(ids) {
