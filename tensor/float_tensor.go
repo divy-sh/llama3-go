@@ -61,16 +61,17 @@ func Float16ToFloat(f16 uint16) float32 {
 	m := uint32(f16) & 0x3ff
 
 	var f32Bits uint32
-	if e == 0 {
+	switch e {
+	case 0:
 		if m == 0 {
 			f32Bits = s << 31 // +/- 0
 		} else {
 			// Subnormal: DAZ (Denormals-Are-Zero) approach
 			f32Bits = s << 31 // Simplified to zero
 		}
-	} else if e == 0x1f {
+	case 0x1f:
 		f32Bits = s<<31 | 0x7F800000 | (m << 13) // +/- Inf or NaN
-	} else {
+	default:
 		// Normal: Adjust exponent bias (15) to F32 bias (127) and shift mantissa
 		f32Bits = s<<31 | ((e - 15 + 127) << 23) | (m << 13)
 	}
