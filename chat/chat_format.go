@@ -78,16 +78,16 @@ func (cf *ChatFormat) GetStopTokens() map[int]struct{} {
 // EncodeHeader encodes the role header, e.g., <|start_header_id|>user<|end_header_id|>\n
 func (cf *ChatFormat) EncodeHeader(message Message) []int {
 	tokens := []int{cf.StartHeader}
-	tokens = append(tokens, cf.Tokenizer.EncodeAsList(message.Role.Name)...)
+	tokens = append(tokens, cf.Tokenizer.EncodeString(message.Role.Name)...)
 	tokens = append(tokens, cf.EndHeader)
-	tokens = append(tokens, cf.Tokenizer.EncodeAsList("\n")...)
+	tokens = append(tokens, cf.Tokenizer.EncodeString("\n")...)
 	return tokens
 }
 
 // EncodeMessage encodes a full message with header and EOT.
 func (cf *ChatFormat) EncodeMessage(message Message) []int {
 	tokens := cf.EncodeHeader(message)
-	tokens = append(tokens, cf.Tokenizer.EncodeAsList(strings.TrimSpace(message.Content))...)
+	tokens = append(tokens, cf.Tokenizer.EncodeString(strings.TrimSpace(message.Content))...)
 	tokens = append(tokens, cf.EndOfTurn)
 	return tokens
 }
