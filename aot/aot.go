@@ -55,8 +55,8 @@ func preLoadGGUF(modelPath string) *PartialModel {
 	return &PartialModel{
 		ModelFileName:    filepath.Base(path),
 		Model:            baseModel,
-		TensorDataOffset: gguf.GetTensorDataOffset(),
-		TensorInfos:      gguf.GetTensorInfos(),
+		TensorDataOffset: gguf.TensorDataOffset,
+		TensorInfos:      gguf.TensorInfos,
 	}
 }
 
