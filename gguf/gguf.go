@@ -128,9 +128,48 @@ func (g *GGUF) loadModelImpl(r io.ReadSeeker) error {
 	return nil
 }
 
-// TODO implement this
+// LoadTensors opens the GGUF file and loads tensor data based on tensor infos
 func LoadTensors(modelPath string, tensorDataOffset int64, tensorInfos map[string]GGUFTensorInfo) (map[string]tensor.GGMLTensorEntry, error) {
-	panic("not implemented")
+	file, err := os.Open(modelPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open model file: %w", err)
+	}
+	defer file.Close()
+
+	result := make(map[string]tensor.GGMLTensorEntry, len(tensorInfos))
+
+	for name, info := range tensorInfos {
+		// Calculate the number of elements
+		numElements := 1
+		for _, dim := range info.Dimensions {
+			numElements *= dim
+		}
+
+		// Calculate the byte size needed for this tensor
+		byteSize := info.GGMLType.ByteSizeFor(numElements)
+
+		// Seek to the tensor data location (tensorDataOffset + offset)
+		tensorOffset := tensorDataOffset + int64(info.Offset)
+		if _, err := file.Seek(tensorOffset, io.SeekStart); err != nil {
+			return nil, fmt.Errorf("failed to seek to tensor '%s' data: %w", name, err)
+		}
+
+		// Read the tensor data
+		data := make([]byte, byteSize)
+		if _, err := io.ReadFull(file, data); err != nil {
+			return nil, fmt.Errorf("failed to read tensor '%s' data: %w", name, err)
+		}
+
+		// Create GGMLTensorEntry
+		result[name] = tensor.GGMLTensorEntry{
+			Name:     name,
+			GGMLType: info.GGMLType,
+			Shape:    info.Dimensions,
+			Data:     tensor.MemorySegment(data),
+		}
+	}
+
+	return result, nil
 }
 
 func (g *GGUF) readHeader(r io.Reader) error {
@@ -240,7 +279,7 @@ func (g *GGUF) readGGMLType(r io.Reader) (tensor.GGMLType, error) {
 	if err := binary.Read(r, byteOrder, &typeID); err != nil {
 		return tensor.GGMLType(0), err
 	}
-	return tensor.GGMLTypeFromID(int(typeID))
+	return tensor.GGMLType(int(typeID)), nil
 }
 
 func (g *GGUF) readString(r io.Reader) (string, error) {

@@ -135,7 +135,7 @@ func LoadModelGguf(r *os.File, ggufData *gguf.GGUF, contextLength int, shouldLoa
 
 	var weights *Weights
 	if shouldLoadWeights {
-		tensorEntries, err := gguf.LoadTensors(r.Name(), ggufData.GetTensorDataOffset(), ggufData.GetTensorInfos())
+		tensorEntries, err := gguf.LoadTensors(r.Name(), ggufData.TensorDataOffset, ggufData.TensorInfos)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load tensors: %w", err)
 		}
@@ -156,7 +156,7 @@ func LoadWeights(tensorEntries map[string]tensor.GGMLTensorEntry, config *Config
 	hiFreqFactor := float32(3.0)
 	oldContextLength := 8192
 
-	ropeFreqsReal, ropeFreqsImag := model.RoPEPrecomputeFreqsCis(config.ContextLength, config.HeadSize, config.RopeTheta,
+	ropeFreqsReal, ropeFreqsImag := model.PrecomputeFreqsCis(config.ContextLength, config.HeadSize, config.RopeTheta,
 		ropeScaling, scaleFactor, loFreqFactor, hiFreqFactor, oldContextLength) // Assuming RoPEPrecomputeFreqsCis exists
 
 	tokenEmbeddings, ok := tensorEntries["token_embd.weight"]
@@ -258,7 +258,7 @@ func createTokenizer(metadata map[string]interface{}, vocabulary *tokenizer.Voca
 // loadQuantizedTensor loads a tensor entry and returns a FloatTensor based on its GGML type.
 // (Assuming FloatTensor, Q8_0FloatTensor, etc., are interfaces/structs in the `llama` package)
 func loadQuantizedTensor(entry tensor.GGMLTensorEntry) tensor.FloatTensor {
-	elements := FloatTensorNumberOfElements(entry.Shape) // Assuming helper exists
+	elements := tensor.NumberOfElements(entry.Shape)
 
 	switch entry.GGMLType {
 	// case tensor.F32:
@@ -283,7 +283,7 @@ func toFloatBuffer(tensorEntry tensor.GGMLTensorEntry) []float32 {
 	}
 
 	// We assume entry.Data is a []byte or similar segment of the tensor data.
-	byteData := tensorEntry.Data.Bytes() // Assuming entry.Data provides access to bytes
+	byteData := tensorEntry.Data
 
 	numFloats := len(byteData) / 4
 	floats := make([]float32, numFloats)

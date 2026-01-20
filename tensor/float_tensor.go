@@ -25,6 +25,7 @@ type FloatTensor interface {
 	MultiplyInPlace(thisOffset int, that FloatTensor, thatOffset int, size int) FloatTensor
 	SaxpyInPlace(thisOffset int, that FloatTensor, thatOffset int, size int, a float32) FloatTensor
 	CopyTo(thisOffset int, that FloatTensor, thatOffset int, size int)
+	SoftmaxInPlace(thisOffset int, size int) FloatTensor
 }
 
 const (
@@ -95,7 +96,7 @@ func ScalarDot(thiz FloatTensor, thisOffset int, that FloatTensor, thatOffset in
 }
 
 // NumberOfElements calculates the total size from dimensions.
-func NumberOfElements(dimensions ...int) int {
+func NumberOfElements(dimensions []int) int {
 	size := 1
 	for _, dim := range dimensions {
 		if dim <= 0 {
@@ -266,8 +267,8 @@ func NewArrayFloatTensor(values []float32) *ArrayFloatTensor {
 	return t
 }
 
-func ArrayFloatTensorAllocate(dims ...int) *ArrayFloatTensor {
-	numberOfElements := NumberOfElements(dims...)
+func ArrayFloatTensorAllocate(dims []int) *ArrayFloatTensor {
+	numberOfElements := NumberOfElements(dims)
 	return NewArrayFloatTensor(make([]float32, numberOfElements))
 }
 

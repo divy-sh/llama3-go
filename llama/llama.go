@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/divy-sh/llama3-go/model"
 	"github.com/divy-sh/llama3-go/tensor"
 	"github.com/divy-sh/llama3-go/tokenizer"
 	"github.com/divy-sh/llama3-go/util"
@@ -128,7 +129,7 @@ func NewState(config *Configuration, batchSize int) *State {
 	allocate := func(numTokens int, dims ...int) []tensor.FloatTensor {
 		tensors := make([]tensor.FloatTensor, numTokens)
 		for i := range tensors {
-			tensors[i] = tensor.ArrayFloatTensorAllocate(dims...)
+			tensors[i] = tensor.ArrayFloatTensorAllocate(dims)
 		}
 		return tensors
 	}
@@ -145,15 +146,15 @@ func NewState(config *Configuration, batchSize int) *State {
 		V:            allocate(batchSize, config.Dim),
 		Att:          allocate(batchSize, config.NumberOfHeads, config.ContextLength),
 		IdxPrevBlock: -1,
-		Logits:       tensor.ArrayFloatTensorAllocate(config.VocabularySize),
+		Logits:       tensor.ArrayFloatTensorAllocate([]int{config.VocabularySize}),
 		KeyCache:     make([]tensor.FloatTensor, config.NumberOfLayers),
 		ValueCache:   make([]tensor.FloatTensor, config.NumberOfLayers),
 	}
 
 	// Allocate KV Cache
 	for l := 0; l < config.NumberOfLayers; l++ {
-		state.KeyCache[l] = tensor.ArrayFloatTensorAllocate(config.ContextLength, kvDim)
-		state.ValueCache[l] = tensor.ArrayFloatTensorAllocate(config.ContextLength, kvDim)
+		state.KeyCache[l] = tensor.ArrayFloatTensorAllocate([]int{config.ContextLength, kvDim})
+		state.ValueCache[l] = tensor.ArrayFloatTensorAllocate([]int{config.ContextLength, kvDim})
 	}
 
 	return state
@@ -306,7 +307,7 @@ func Forward(model *Llama, state *State, tokens []int, position int, computeLogi
 
 		// g. Residual Connection (Attention)
 		util.ParallelFor(0, nTokens, func(t int) {
-			state.X[t].AddInPlace(state.Xb2[t])
+			state.X[t].AddInPlace(0, state.Xb2[t], 0, dim)
 		})
 
 		// h. FFN RMSNorm
@@ -321,14 +322,14 @@ func Forward(model *Llama, state *State, tokens []int, position int, computeLogi
 		// j. SwiGLU Non-linearity
 		util.ParallelFor(0, nTokens, func(t int) {
 			// silu(x) = x / (1 + exp(-x)) -> applied to Hb
-			state.Hb[t].MapInPlace(func(value float32) float32 {
+			state.Hb[t].MapInPlace(0, config.HiddenDim, func(value float32) float32 {
 				return value / float32(1.0+math.Exp(float64(-value)))
 			})
 		})
 
 		// k. Element-wise Multiply (gate * up)
 		util.ParallelFor(0, nTokens, func(t int) {
-			state.Hb[t].MultiplyInPlace(state.Hb2[t])
+			state.Hb[t].MultiplyInPlace(0, state.Hb2[t], 0, config.HiddenDim)
 		})
 
 		// l. FFN Final Matmul
@@ -336,7 +337,7 @@ func Forward(model *Llama, state *State, tokens []int, position int, computeLogi
 
 		// m. Residual Connection (FFN)
 		util.ParallelFor(0, nTokens, func(t int) {
-			state.X[t].AddInPlace(state.Xb[t])
+			state.X[t].AddInPlace(0, state.Xb[t], 0, dim)
 		})
 	}
 
@@ -354,7 +355,7 @@ func Forward(model *Llama, state *State, tokens []int, position int, computeLogi
 }
 
 // GenerateTokens implements the main LLM generation loop.
-func GenerateTokens(model *Llama, state *State, startPosition int, promptTokens []int, stopTokens map[int]struct{}, maxTokens int, sampler Sampler, echo bool, onTokenGenerated func(int)) []int {
+func GenerateTokens(model *Llama, state *State, startPosition int, promptTokens []int, stopTokens map[int]struct{}, maxTokens int, sampler model.Sampler, echo bool, onTokenGenerated func(int)) []int {
 	startNanos := time.Now().UnixNano()
 	startGen := int64(0)
 
@@ -379,7 +380,7 @@ func GenerateTokens(model *Llama, state *State, startPosition int, promptTokens 
 				tokens[i] = promptTokens[promptIndex+i]
 				if echo {
 					// log prompt token
-					fmt.Fprint(os.Stderr, TokenizerReplaceControlCharacters(model.Tokenizer.Decode([]int{tokens[i]})))
+					fmt.Fprint(os.Stderr, tokenizer.ReplaceControlCharacters(model.Tokenizer.Decode([]int{tokens[i]})))
 				}
 			}
 
@@ -404,11 +405,11 @@ func GenerateTokens(model *Llama, state *State, startPosition int, promptTokens 
 
 		// --- Sampling and Output ---
 
-		nextToken = sampler(state.Logits.GetData())
+		nextToken = sampler.SampleToken(state.Logits)
 
 		if echo {
 			// log inferred token
-			fmt.Fprint(os.Stderr, TokenizerReplaceControlCharacters(model.Tokenizer.Decode([]int{nextToken})))
+			fmt.Fprint(os.Stderr, tokenizer.ReplaceControlCharacters(model.Tokenizer.Decode([]int{nextToken})))
 		}
 
 		generatedTokens = append(generatedTokens, nextToken)

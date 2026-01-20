@@ -16,6 +16,7 @@ import (
 	"github.com/divy-sh/llama3-go/chat"
 	"github.com/divy-sh/llama3-go/llama"
 	"github.com/divy-sh/llama3-go/model"
+	"github.com/divy-sh/llama3-go/tensor"
 	"github.com/divy-sh/llama3-go/util"
 )
 
@@ -31,13 +32,10 @@ func init() {
 	}
 }
 
-// Sampler is a function type for selecting the next token.
-type Sampler func(logits []float32) int
-
-func selectSampler(vocabularySize int, temperature float32, topp float32, rngSeed int64) Sampler {
+func selectSampler(vocabularySize int, temperature float32, topp float32, rngSeed int64) model.Sampler {
 	if temperature == 0.0 {
 		// Greedy argmax sampling
-		return func(logits []float32) int {
+		return func(logits tensor.FloatTensor) int {
 			return model.ARGMAX.SampleToken(logits)
 		}
 	}
